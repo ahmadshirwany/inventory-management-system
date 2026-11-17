@@ -1,0 +1,49 @@
+# byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Ignore database file
+db.sqlite3
+IP_data.json
+
+# Ignore media uploads
+core/media/profile_pictures/
+
+# tests and coverage
+*.pytest_cache
+.coverage
+
+# database & logs
+*.db
+*.sqlite3
+*.sqlite
+*.db3
+*.log
+# venv
+env
+venv
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# other
+.DS_Store
+
+# javascript
+package-lock.json
+
+staticfiles/*
+!staticfiles/.gitkeep 
+.vscode/symbols.json
+
+apps/static/assets/node_modules
+apps/static/assets/yarn.lock
+apps/static/assets/.temp
+apps/managment/products.json

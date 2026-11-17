@@ -1,0 +1,40 @@
+services:
+  inventory-app:
+    container_name: inventory_app
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SQLITE_DIR=/app/data
+    expose:
+      - "5005"
+    volumes:
+      - sqlite_data:/app/data
+      - ./core/media:/app/core/media
+      - static_volume:/app/staticfiles
+    networks:
+      - web_network
+
+  nginx:
+    container_name: inventory_nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "85:85"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+      - ./core/media:/app/core/media:ro
+      - static_volume:/app/staticfiles:ro
+    depends_on:
+      - inventory-app
+    networks:
+      - web_network
+
+volumes:
+  sqlite_data:
+  static_volume:
+
+networks:
+  web_network:
+    driver: bridge

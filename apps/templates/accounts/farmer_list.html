@@ -1,0 +1,194 @@
+{% extends "layouts/base.html" %}
+{% block title %} Farmers {% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .filter-dropdown {
+            margin-bottom: 15px;
+        }
+        .clear-filters-btn {
+            margin-left: 10px;
+        }
+        .filter-row {
+            margin-bottom: 10px;
+        }
+        .collapse.show {
+            display: block;
+        }
+        .table-hover tr:hover {
+            cursor: pointer;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .table th, .table td {
+            white-space: nowrap;
+            padding: 8px;
+            vertical-align: middle !important;
+        }
+        .pagination {
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .header-buttons {
+            float: right;
+            margin-top: -40px;
+        }
+        label.required::after {
+            content: '*';
+            color: red;
+            margin-left: 2px;
+        }
+    </style>
+{% endblock stylesheets %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-plain">
+                <div class="card-header card-header-primary">
+                    <h4 class="card-title mt-0">Farmers</h4>
+                    {% if request.user.is_superuser or is_owner %}
+                        <div class="header-buttons">
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addFarmerModal">
+                                <i class="fa fa-plus"></i> Add New Farmer
+                            </button>
+                        </div>
+                    {% endif %}
+                    <p class="card-category">List of all farmers</p>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Section -->
+                    <button class="btn btn-secondary mb-3" type="button" data-toggle="collapse" data-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel">
+                        <i class="fa fa-filter"></i> Filters
+                    </button>
+
+                    <div class="collapse" id="filterPanel">
+                        <form method="GET" action="{% url 'farmer_list' %}" class="mb-3 filter-dropdown">
+                            <div class="filter-row">
+                                <label>Name:</label>
+                                <input type="text" class="form-control" name="name" placeholder="Filter by Name" value="{{ filters.name }}">
+                            </div>
+                            <div class="filter-row">
+                                <label>Farm Name:</label>
+                                <input type="text" class="form-control" name="farm_name" placeholder="Filter by Farm Name" value="{{ filters.farm_name }}">
+                            </div>
+                            <div class="filter-row">
+                                <label>Email:</label>
+                                <input type="text" class="form-control" name="email" placeholder="Filter by Email" value="{{ filters.email }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <button type="button" class="btn btn-secondary clear-filters-btn" onclick="clearFilters()">Clear Filters</button>
+                        </form>
+                    </div>
+
+                    <!-- Farmer Table -->
+                    <div class="table-responsive">
+                        {% if page_obj %}
+                            <table class="table table-hover" id="farmersTable">
+                                <thead>
+                                    <th>Name</th>
+                                    <th>Contact Number</th>
+                                    <th>Email</th>
+                                    <th>Address</th>
+                                    <th>Farm Name</th>
+                                    <th>Farm Location</th>
+                                    <th>Total Land Area</th>
+                                    <th>Registration Date</th>
+                                    <th>Owner</th>
+                                    <th>Username</th>
+                                    {% if request.user.is_superuser or is_owner %}
+                                        <th>Actions</th>
+                                    {% endif %}
+                                </thead>
+                                <tbody>
+                                    {% for farmer in page_obj %}
+                                    <tr>
+                                        <td>{{ farmer.name }}</td>
+                                        <td>{{ farmer.contact_number|default:"N/A" }}</td>
+                                        <td>{{ farmer.email|default:"N/A" }}</td>
+                                        <td>{{ farmer.address|default:"N/A" }}</td>
+                                        <td>{{ farmer.farm_name|default:"N/A" }}</td>
+                                        <td>{{ farmer.farm_location|default:"N/A" }}</td>
+                                        <td>{{ farmer.total_land_area|default:"N/A" }}</td>
+                                        <td>{{ farmer.registration_date|date:"Y-m-d"|default:"N/A" }}</td>
+                                        <td>
+                                            {% if farmer.user.owner %}
+                                                {{ farmer.user.owner.username }}
+                                            {% else %}
+                                                None
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ farmer.user.username }}</td>
+                                        {% if request.user.is_superuser or farmer.user.owner == request.user %}
+                                            <td style="text-align: center;">
+                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editFarmerModal_{{ farmer.id }}" onclick="event.stopPropagation();">
+                                                    Edit
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteFarmerModal_{{ farmer.id }}" onclick="event.stopPropagation();">
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+
+                            <!-- Pagination -->
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Previous</span>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next</span>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% else %}
+                            <p class="text-center text-muted">No farmers available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Modals -->
+    {% include "accounts/farmer_modals.html" %}
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function clearFilters() {
+            window.location.href = "{% url 'farmer_list' %}";
+        }
+    </script>
+{% endblock javascripts %}
